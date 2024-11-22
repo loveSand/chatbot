@@ -1,0 +1,39 @@
+# Environment Files
+.env
+.venv
+
+# Log Files
+*.log
+
+# Python Bytecode
+__pycache__/
+*.py[cod]
+
+# Conda Environment Files
+.conda/
+.condarc
+.conda-env/
+
+# Jupyter Notebooks Checkpoints
+.ipynb_checkpoints
+
+# Virtual Environment
+env/
+venv/
+
+# IDE and Editor Configurations
+.idea/
+.vscode/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Build and Distribution Files
+build/
+dist/
+*.egg-info/
+
+# Libraries
+Lib/
+Library/
