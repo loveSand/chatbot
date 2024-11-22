@@ -15,8 +15,16 @@ model = model.to(device)
 # Flask app setup
 app = Flask(__name__, template_folder='../templates')
 
-# Added: keep track of the conversation history
+# Keep track of the conversation history
 chat_history_ids = None
+
+# Travel fallback responses
+travel_fallbacks = {
+    "recommend": "Some great travel destinations include Japan, Italy, and New Zealand!",
+    "travel": "Traveling is all about exploring new places, experiencing cultures, and relaxing.",
+    "places": "I suggest visiting Bali for beaches, Kyoto for tradition, or Iceland for nature!",
+    "default": "I'm here to help with your travel questions. Can you ask in a different way?"
+}
 
 @app.route('/')
 def index():
@@ -30,23 +38,51 @@ def chat():
     return jsonify({'response': response})
 
 def get_response(user_input):
+    """
+    Generate a response for the user's input, either using fallback logic or the DialoGPT model.
+    """
     global chat_history_ids
 
-    # Added: chat history
-    chat_history = f"User: {user_input} \n" 
+    # Normalize input for fallback checks
+    user_input_lower = user_input.lower()
 
-    # Encode input and get response from the model
-    input_ids = tokenizer.encode(chat_history + tokenizer.eos_token, return_tensors='pt').to(device)
+    # Check for fallback responses
+    if "recommend" in user_input_lower:
+        return f"ChaTravel: {travel_fallbacks['recommend']}"
+    elif "travel" in user_input_lower or "place" in user_input_lower:
+        return f"ChaTravel: {travel_fallbacks['places']}"
+    elif "what is travel" in user_input_lower:
+        return f"ChaTravel: {travel_fallbacks['travel']}"
 
-    # Generate responses from the model
-    chat_history_ids = model.generate(input_ids, max_length=1000, pad_token_id=tokenizer.eos_token_id)
+    # Tokenize the input
+    try:
+        input_ids = tokenizer.encode(user_input + tokenizer.eos_token, return_tensors='pt').to(device)
 
-    # Decode and return the response
-    bot_output = tokenizer.decode(chat_history_ids[:, input_ids.shape[-1]:][0], skip_special_tokens=True)
+        # Append to conversation history if it exists
+        if chat_history_ids is not None:
+            input_ids = torch.cat([chat_history_ids, input_ids], dim=-1)
 
-    return f"ChaTravel: {bot_output}"
+        # Generate a response using the model
+        chat_history_ids = model.generate(
+            input_ids,
+            max_length=1000,
+            pad_token_id=tokenizer.eos_token_id
+        )
+        bot_output = tokenizer.decode(chat_history_ids[:, input_ids.shape[-1]:][0], skip_special_tokens=True)
 
-print("template folder path:", os.path.join(app.root_path, 'templates'))
+        # Return fallback response if model response is incoherent
+        if not bot_output.strip() or len(bot_output.split()) < 3:
+            return f"ChaTravel: {travel_fallbacks['default']}"
+
+        return f"ChaTravel: {bot_output}"
+
+    except Exception as e:
+        # Log errors and return a fallback response
+        print(f"Error during response generation: {e}")
+        return f"ChaTravel: {travel_fallbacks['default']}"
+
+# Print the template folder path for debugging
+print("Template folder path:", os.path.join(app.root_path, 'templates'))
 
 if __name__ == '__main__':
     app.run(debug=True)
