@@ -13,7 +13,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
 # Flask app setup
-app = Flask(__name__, template_folder='../templates')
+app = Flask(__name__, static_folder='../static', template_folder='../templates')
 
 # Keep track of the conversation history
 chat_history_ids = None
@@ -48,11 +48,11 @@ def get_response(user_input):
 
     # Check for fallback responses
     if "recommend" in user_input_lower:
-        return f"ChaTravel: {travel_fallbacks['recommend']}"
+        return travel_fallbacks['recommend']
     elif "travel" in user_input_lower or "place" in user_input_lower:
-        return f"ChaTravel: {travel_fallbacks['places']}"
+        return travel_fallbacks['places']
     elif "what is travel" in user_input_lower:
-        return f"ChaTravel: {travel_fallbacks['travel']}"
+        return travel_fallbacks['travel']
 
     # Tokenize the input
     try:
@@ -72,14 +72,14 @@ def get_response(user_input):
 
         # Return fallback response if model response is incoherent
         if not bot_output.strip() or len(bot_output.split()) < 3:
-            return f"ChaTravel: {travel_fallbacks['default']}"
+            return travel_fallbacks['default']
 
-        return f"ChaTravel: {bot_output}"
+        return bot_output
 
     except Exception as e:
         # Log errors and return a fallback response
         print(f"Error during response generation: {e}")
-        return f"ChaTravel: {travel_fallbacks['default']}"
+        return travel_fallbacks['default']
 
 # Print the template folder path for debugging
 print("Template folder path:", os.path.join(app.root_path, 'templates'))
